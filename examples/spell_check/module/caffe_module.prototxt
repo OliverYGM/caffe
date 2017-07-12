@@ -1,0 +1,113 @@
+name: "spell_check_model"
+
+layer {
+  name: "input"
+  type: "Input"
+  top: "input_words"
+  top: "cont"
+  input_param {
+    shape {
+      dim: 3
+      dim: 20
+    }
+    shape {
+      dim: 3
+      dim: 20
+    }
+  }
+}
+
+layer {
+  name: "convertInput"
+  type: "ConvertToStream"
+  bottom: "input_words"
+  top: "input_words_sm"
+}
+layer {
+  name: "convertCont"
+  type: "ConvertToStream"
+  bottom: "cont"
+  top: "cont_sm"
+}
+
+layer {
+  name: "embedding"
+  type: "Embed"
+  bottom: "input_words_sm"
+  top: "embedded_input_words"
+  param {
+    lr_mult: 1
+  }
+  embed_param {
+    bias_term: false
+    input_dim: 6801 
+    num_output: 1000
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+  }
+}
+
+layer {
+    name: "reshape"
+    type: "Reshape"
+    bottom: "cont_sm"
+    top: "reshape_cont"
+    reshape_param {
+      shape {
+        dim: 20 
+        dim: 3  # batch_size
+      }
+    }
+ }
+
+layer {
+  name: "lstm1"
+  type: "LSTM"
+  bottom: "embedded_input_words"
+  bottom: "reshape_cont"
+  top: "lstm1"
+  recurrent_param {
+    num_output: 512
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "predict"
+  type: "InnerProduct"
+  bottom: "lstm1"
+  top: "predict"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 6801  
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+    axis: 2
+  }
+}
+
